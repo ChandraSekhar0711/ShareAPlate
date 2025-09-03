@@ -4,13 +4,14 @@ import { Heart, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle.jsx";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "./Logo.jsx";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -45,11 +46,10 @@ export function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-sm transition-colors duration-200 ${
-                  pathname === item.href
+                className={`text-sm transition-colors duration-200 ${pathname === item.href
                     ? "text-primary"
                     : "text-muted-foreground hover:text-primary"
-                }`}
+                  }`}
               >
                 {item.name}
               </Link>
@@ -61,12 +61,17 @@ export function Navbar() {
             <ThemeToggle />
             <Button
               variant="ghost"
-              className="text-muted-foreground hover:text-primary hover:bg-muted"
+              className="text-muted-foreground hover:text-primary hover:bg-muted transition-all duration-200"
+
             >
-              Login
+              <Link href="/login">Sign In</Link>
+
             </Button>
-            <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300">
-              Sign Up
+            <Button
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Link href="/register">Join Community</Link>
+
             </Button>
           </div>
 
@@ -93,11 +98,10 @@ export function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`block w-full text-left py-2 transition-colors duration-200 ${
-                  pathname === item.href
+                className={`block w-full text-left py-2 transition-colors duration-200 ${pathname === item.href
                     ? "text-primary"
                     : "text-muted-foreground hover:text-primary"
-                }`}
+                  }`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.name}
@@ -108,10 +112,11 @@ export function Navbar() {
                 variant="ghost"
                 className="text-muted-foreground hover:text-primary hover:bg-muted justify-start"
               >
-                Login
+                <Link href="/login">Sign In</Link>
+
               </Button>
               <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 justify-start">
-                Sign Up
+                <Link href="/register">Join Community</Link>
               </Button>
             </div>
           </div>
