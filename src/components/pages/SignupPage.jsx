@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -7,9 +8,11 @@ import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { Eye, EyeOff, Mail, Lock, User, Heart, Apple, Chrome, MapPin } from 'lucide-react';
 import { ImageWithFallback } from '@/assets/ImageWithFallback';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// import { ImageWithFallback } from '../figma/ImageWithFallback.jsx';
+import { auth, googleProvider, appleProvider } from '../../lib/firebase'; // Corrected import path
+import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import Cookies from 'js-cookie';
 
 export function SignupPage() {
   const router = useRouter();
@@ -25,37 +28,71 @@ export function SignupPage() {
     agreeToTerms: false,
     subscribeNewsletter: true
   });
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSocialLoading, setIsSocialLoading] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
     if (!formData.agreeToTerms) {
-      alert('Please agree to the Terms of Service');
+      setError('You must agree to the Terms of Service');
       return;
     }
-    // Handle signup logic here
-    console.log('Signing up:', formData);
-    // For now, redirect to home after signup
-    router.push('/');
+
+    setIsLoading(true);
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const token = await userCredential.user.getIdToken();
+      Cookies.set('firebase-auth-token', token, { expires: 7 }); // Set cookie for 7 days
+      // You might want to save additional user info (firstName, lastName) to Firestore here
+      router.push('/profile'); // Redirect to profile page on successful signup
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSocialSignup = (provider) => {
-    console.log(`Signing up with ${provider}`);
-    // Handle social signup
-    router.push('/');
+  const handleSocialSignup = async (provider) => {
+    setError(null);
+    setIsSocialLoading(provider);
+
+    try {
+        let authProvider;
+        if (provider === 'Google') {
+            authProvider = googleProvider;
+        } else if (provider === 'Apple') {
+            authProvider = appleProvider;
+        } else {
+            console.log(`Social signup with ${provider} is not implemented yet.`);
+            setIsSocialLoading(null);
+            return;
+        }
+        const userCredential = await signInWithPopup(auth, authProvider);
+        const token = await userCredential.user.getIdToken();
+        Cookies.set('firebase-auth-token', token, { expires: 7 });
+        router.push('/profile');
+    } catch (error) {
+        setError(error.message);
+    } finally {
+        setIsSocialLoading(null);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
-        {/* Left Side - Signup Form */}
         <div className="w-full max-w-md mx-auto lg:order-1">
           <Card className="border-border bg-card/50 backdrop-blur-sm">
             <CardHeader className="text-center space-y-4">
@@ -72,23 +109,24 @@ export function SignupPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {/* Social Signup Buttons */}
               <div className="space-y-3">
                 <Button
                   variant="outline"
                   className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
                   onClick={() => handleSocialSignup('Google')}
+                  disabled={isLoading || isSocialLoading === 'Google'}
                 >
                   <Chrome className="w-4 h-4 mr-2" />
-                  Sign up with Google
+                  {isSocialLoading === 'Google' ? 'Signing up...' : 'Sign up with Google'}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
                   onClick={() => handleSocialSignup('Apple')}
+                   disabled={isLoading || isSocialLoading === 'Apple'}
                 >
                   <Apple className="w-4 h-4 mr-2" />
-                  Sign up with Apple
+                  {isSocialLoading === 'Apple' ? 'Signing up...' : 'Sign up with Apple'}
                 </Button>
               </div>
 
@@ -99,7 +137,6 @@ export function SignupPage() {
                 </div>
               </div>
 
-              {/* Signup Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -114,6 +151,7 @@ export function SignupPage() {
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
                         className="bg-input-background border-border pl-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -127,6 +165,7 @@ export function SignupPage() {
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       className="bg-input-background border-border focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -143,6 +182,7 @@ export function SignupPage() {
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       className="bg-input-background border-border pl-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -158,6 +198,7 @@ export function SignupPage() {
                       value={formData.location}
                       onChange={(e) => handleInputChange('location', e.target.value)}
                       className="bg-input-background border-border pl-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -174,6 +215,7 @@ export function SignupPage() {
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       className="bg-input-background border-border pl-10 pr-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       required
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
@@ -182,11 +224,7 @@ export function SignupPage() {
                       className="absolute right-2 top-2 h-6 w-6 p-0 hover:bg-muted/50"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
@@ -203,6 +241,7 @@ export function SignupPage() {
                       onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                       className="bg-input-background border-border pl-10 pr-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       required
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
@@ -211,16 +250,13 @@ export function SignupPage() {
                       className="absolute right-2 top-2 h-6 w-6 p-0 hover:bg-muted/50"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
 
-                {/* Checkboxes */}
+                {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+                
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
                     <Checkbox
@@ -228,12 +264,13 @@ export function SignupPage() {
                       checked={formData.agreeToTerms}
                       onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked)}
                       className="mt-1"
+                      disabled={isLoading}
                     />
                     <Label htmlFor="agreeToTerms" className="text-sm leading-5">
                       I agree to the{' '}
                       <Button variant="link" className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4">
                         Terms of Service
-                      </Button>{' '}
+                      </Button>
                       and{' '}
                       <Button variant="link" className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4">
                         Privacy Policy
@@ -247,6 +284,7 @@ export function SignupPage() {
                       checked={formData.subscribeNewsletter}
                       onCheckedChange={(checked) => handleInputChange('subscribeNewsletter', checked)}
                       className="mt-1"
+                      disabled={isLoading}
                     />
                     <Label htmlFor="subscribeNewsletter" className="text-sm leading-5">
                       I'd like to receive community updates and meal sharing tips
@@ -258,8 +296,9 @@ export function SignupPage() {
                   type="submit"
                   size="lg"
                   className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={isLoading}
                 >
-                  Create Your Account
+                  {isLoading ? 'Creating Account...' : 'Create Your Account'}
                 </Button>
               </form>
 
@@ -276,7 +315,6 @@ export function SignupPage() {
             </CardContent>
           </Card>
 
-          {/* Trust Badges */}
           <div className="mt-8 flex justify-center space-x-6 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-emerald-400 rounded-full" />
@@ -293,7 +331,6 @@ export function SignupPage() {
           </div>
         </div>
 
-        {/* Right Side - Image */}
         <div className="hidden lg:block lg:order-2">
           <Card className="border-border bg-card/50 backdrop-blur-sm overflow-hidden">
             <CardContent className="p-0 relative">

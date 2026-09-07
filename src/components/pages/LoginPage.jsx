@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -6,8 +7,11 @@ import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { Eye, EyeOff, Mail, Lock, Heart, Apple, Chrome } from 'lucide-react';
 import { ImageWithFallback } from '@/assets/ImageWithFallback';
-import {  useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { auth, googleProvider, appleProvider } from '../../lib/firebase';
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import Cookies from 'js-cookie';
 
 export function LoginPage() {
   const router = useRouter();
@@ -16,23 +20,55 @@ export function LoginPage() {
     email: '',
     password: ''
   });
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSocialLoading, setIsSocialLoading] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Logging in:', formData);
-    // For now, redirect to home after login
-    router.push('/');
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const token = await userCredential.user.getIdToken();
+      Cookies.set('firebase-auth-token', token, { expires: 7 }); // Set cookie for 7 days
+      router.push('/profile'); // Redirect to profile page on successful login
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSocialLogin = (provider) => {
-    console.log(`Logging in with ${provider}`);
-    // Handle social login
-    route.push('/');
+  const handleSocialLogin = async (provider) => {
+    setError(null);
+    setIsSocialLoading(provider);
+
+    try {
+        let authProvider;
+        if (provider === 'Google') {
+            authProvider = googleProvider;
+        } else if (provider === 'Apple') {
+            authProvider = appleProvider;
+        } else {
+            console.log(`Social login with ${provider} is not implemented yet.`);
+            setIsSocialLoading(null);
+            return;
+        }
+        const userCredential = await signInWithPopup(auth, authProvider);
+        const token = await userCredential.user.getIdToken();
+        Cookies.set('firebase-auth-token', token, { expires: 7 });
+        router.push('/profile');
+    } catch (error) {
+        setError(error.message);
+    } finally {
+        setIsSocialLoading(null);
+    }
   };
 
   return (
@@ -66,7 +102,7 @@ export function LoginPage() {
                 <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-400 rounded-full flex items-center justify-center">
                   <Heart className="w-6 h-6 text-slate-900" />
                 </div>
-                <span className="text-2xl text-foreground" ><Link href={"/"}>ShareAPlate</Link></span>
+                <span className="text-2xl text-foreground" ><Link href="/">ShareAPlate</Link></span>
               </div>
               <CardTitle className="text-2xl text-card-foreground">Welcome Back</CardTitle>
               <p className="text-muted-foreground">
@@ -81,17 +117,19 @@ export function LoginPage() {
                   variant="outline"
                   className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
                   onClick={() => handleSocialLogin('Google')}
+                  disabled={isLoading || isSocialLoading === 'Google'}
                 >
                   <Chrome className="w-4 h-4 mr-2" />
-                  Continue with Google
+                  {isSocialLoading === 'Google' ? 'Signing in...' : 'Continue with Google'}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
                   onClick={() => handleSocialLogin('Apple')}
+                  disabled={isLoading || isSocialLoading === 'Apple'}
                 >
                   <Apple className="w-4 h-4 mr-2" />
-                  Continue with Apple
+                  {isSocialLoading === 'Apple' ? 'Signing in...' : 'Continue with Apple'}
                 </Button>
               </div>
 
@@ -116,6 +154,7 @@ export function LoginPage() {
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       className="bg-input-background border-border pl-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -132,6 +171,7 @@ export function LoginPage() {
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       className="bg-input-background border-border pl-10 pr-10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       required
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
@@ -140,18 +180,16 @@ export function LoginPage() {
                       className="absolute right-2 top-2 h-6 w-6 p-0 hover:bg-muted/50"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
+                
+                {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" className="rounded border-border" />
+                    <input type="checkbox" className="rounded border-border" disabled={isLoading} />
                     <span className="text-muted-foreground">Remember me</span>
                   </label>
                   <Button 
@@ -167,8 +205,9 @@ export function LoginPage() {
                   type="submit"
                   size="lg"
                   className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={isLoading}
                 >
-                  Sign In to ShareAPlate
+                  {isLoading ? 'Signing In...' : 'Sign In to ShareAPlate'}
                 </Button>
               </form>
 
