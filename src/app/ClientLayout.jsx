@@ -1,18 +1,21 @@
-"use client";
+'use client';
 
-import { usePathname } from "next/navigation";
-import { Navbar } from "@/sections/Navbar.jsx";
+import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider } from '@/sections/ThemeProvider';
+import { Navbar } from '@/sections/Navbar.jsx';
 
 export default function ClientLayout({ children }) {
-  const pathname = usePathname();
-
-  // routes without navbar
-  const noNavbarRoutes = ["/login", "/register", "/forgotPassword"];
-
   return (
-    <div className="min-h-screen">
-      {!noNavbarRoutes.includes(pathname) && <Navbar />}
-      {children}
-    </div>
+    <AuthProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <Navbar />
+        {children}
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

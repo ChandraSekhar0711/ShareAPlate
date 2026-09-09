@@ -1,78 +1,80 @@
 
-# Project Blueprint
+# ShareAPlate Application Blueprint
 
 ## Overview
 
-This project is a web application, "ShareAPlate," built with Next.js and the App Router. It is a platform designed to connect food donors with those in need, facilitating community-based food sharing. The application features a complete and secure user authentication system (registration, login, Google Sign-In, Apple Sign-In, and protected user profiles), a donation page, and a request listing page. The user interface is modern, responsive, and designed for a great user experience.
+ShareAPlate is a community-driven food sharing application designed to connect people with surplus food to those in need. The application is built with Next.js and Firebase, providing a modern, responsive, and scalable platform for users to share and receive food.
 
-## Tech Stack
+## Core Features
+
+*   **User Authentication:** Secure sign-up and sign-in functionality using Firebase Authentication, with support for email/password and Google social login.
+*   **Food Listings:** Users can create, view, and manage listings for surplus food items.
+*   **Search and Discovery:** A robust search and filtering system to help users find food based on location, category, and other criteria.
+*   **Real-time Updates:** Real-time updates on food listings and requests, powered by Firebase Firestore.
+*   **User Profiles:** Public user profiles to build trust and community within the platform.
+
+## Design and Styling
+
+*   **Framework:** Tailwind CSS for a utility-first styling approach.
+*   **Component Library:** `shadcn/ui` for a set of accessible and customizable UI components.
+*   **Typography:** The `Geist` font family is used for a clean and modern aesthetic.
+*   **Layout:** A responsive layout that adapts to different screen sizes, ensuring a seamless experience on both mobile and desktop devices.
+
+## Technical Stack
 
 *   **Framework:** Next.js (App Router)
-*   **Authentication:** Firebase Authentication (including Google and Apple Auth Providers)
-*   **UI Components:** Radix UI, shadcn/ui
+*   **Authentication:** Firebase Authentication
+*   **Database:** Firebase Firestore
 *   **Styling:** Tailwind CSS
-*   **Icons:** Lucide React
-*   **Form Management:** React Hook Form
-*   **Schema Validation:** Zod
-*   **Cookie Management:** js-cookie
+*   **UI Components:** `shadcn/ui`
+*   **Deployment:** Firebase Hosting
 
 ## Project Structure
 
-*   `/src/app`: Contains the main application routes.
-    *   `/src/app/donate`: Page for making a donation.
-    *   `/src/app/forgotPassword`: Page for password recovery.
-    *   `/src/app/login`: User login page.
-    *   `/src/app/profile`: User profile page (protected route).
-    *   `/src/app/register`: User registration page.
-    *   `/src/app/requests`: Page for listing requests.
-*   `/src/components`: Reusable React components.
-    *   `/src/components/ui`: Base UI components from shadcn/ui.
-    *   `/src/components/pages`: Components that represent entire pages.
-*   `/src/sections`: Larger, reusable sections of pages (e.g., Header, Footer, Hero).
-*   `/public`: Static assets like images and icons.
-*   `/src/lib`: Utility functions, including Firebase configuration (`firebase.js`).
-*   `/src/middleware.js`: Middleware for protecting routes.
-*   `requests.json`: A JSON file serving as a temporary data source for requests.
+```
+/app
+├── (auth)                # Authentication routes
+│   ├── sign-in
+│   └── sign-up
+├── (dashboard)           # Protected dashboard routes
+│   ├── layout.tsx
+│   └── page.tsx
+├── api                   # API routes
+├── components            # Reusable UI components
+├── lib                   # Utility functions and libraries
+├── layout.tsx            # Root layout
+└── page.tsx              # Home page
+```
 
-## Features
+## Development Plan: Initial Setup and Dependency Fixes
 
-*   **Comprehensive User Authentication:**
-    *   **Email/Password Registration:** New users can create an account with their email and password.
-    *   **Email/Password Login:** Existing users can sign in.
-    *   **Google Sign-In:** Users can sign in or register with their Google account.
-    *   **Apple Sign-In:** Users can sign in or register with their Apple ID.
-    *   **Protected Routes:** The user profile page (`/profile`) is protected, and unauthenticated users are redirected to the login page.
-    *   **Secure Logout:** A secure logout process that clears the user's session and removes the authentication cookie.
-*   **User Profile Dashboard:** A modern, welcoming dashboard for authenticated users to view their information.
-*   **Donation Form:** A dedicated page for users to make donations.
-*   **Request Listings:** A page to display a list of current requests.
-*   **Theming:** Includes a theme toggle for light and dark modes.
-*   **Responsive Design:** The application is designed to be fully responsive and accessible on various devices.
+### Objective
 
-## Authentication Flow
+The primary goal of this initial development phase was to establish a stable and reliable foundation for the ShareAPlate application. This involved downgrading several key dependencies from unstable, pre-release versions to their latest stable counterparts, and then upgrading to the latest stable version of Next.js.
 
-1.  **Registration (`SignupPage.jsx`):**
-    *   **Email/Password:** A new user is created using `createUserWithEmailAndPassword`.
-    *   **Google Sign-In:** A new user is created using `signInWithPopup` with the `GoogleAuthProvider`.
-    *   **Apple Sign-In:** A new user is created using `signInWithPopup` with the `OAuthProvider('apple.com')`.
-    *   Upon successful registration, a `firebase-auth-token` cookie is set.
-    *   The user is redirected to their new profile page (`/profile`).
+### Plan and Steps
 
-2.  **Login (`LoginPage.jsx`):**
-    *   **Email/Password:** An existing user is authenticated using `signInWithEmailAndPassword`.
-    *   **Google Sign-In:** An existing user is authenticated using `signInWithPopup` with the `GoogleAuthProvider`.
-    *   **Apple Sign-In:** An existing user is authenticated using `signInWithPopup` with the `OAuthProvider('apple.com')`.
-    *   Upon successful login, the `firebase-auth-token` cookie is set.
-    *   The user is redirected to their profile page (`/profile`).
+1.  **Diagnose the Root Cause:** The initial investigation revealed that the project was using `next@^16.3.4` and `tailwindcss@^4`, which are highly unstable and incompatible with the project's UI component library.
 
-3.  **Route Protection (`middleware.js`):**
-    *   The middleware intercepts requests to `/profile`.
-    *   It checks for the `firebase-auth-token` cookie.
-    *   If the cookie is missing, the user is redirected to `/login`.
+2.  **Update `package.json`:** The `package.json` file was updated to use the following stable versions:
+    *   `next`: `14.2.4`
+    *   `react`: `^18`
+    *   `react-dom`: `^18`
+    *   `tailwindcss`: `^3.4.4`
+    *   `eslint`: `^8`
+    *   And various other `@radix-ui` and `shadcn/ui` related packages.
 
-4.  **Profile Page (`ProfilePage.jsx`):**
-    *   Displays the authenticated user's information.
-    *   The `onAuthStateChanged` listener actively monitors the user's session.
-    *   The "Logout" button signs the user out, removes the `firebase-auth-token` cookie, and redirects to the homepage.
+3.  **Clean Installation of Dependencies:** To ensure a clean and consistent environment, the `node_modules` directory and the `package-lock.json` file were deleted, followed by a fresh `npm install`.
 
-This blueprint provides a comprehensive overview of the project's current state. It will be updated as new features are added.
+4.  **Resolve Font Loading Error:** After downgrading Next.js, a build error occurred because the `Geist` font was no longer built-in. This was resolved by:
+    *   Installing the `geist` npm package.
+    *   Updating `src/app/layout.js` to import the font from `geist/font/sans` and `geist/font/mono`.
+
+5.  **Upgrade to Latest Stable Next.js:** To ensure the project has the latest features and security updates, the application was upgraded to the latest stable version of Next.js (`14.2.35`). This involved:
+    *   Identifying the latest stable version using `npm view next dist-tags`.
+    *   Updating `package.json` with the new version.
+    *   Running `npm install` to apply the changes.
+
+### Outcome
+
+By reverting to stable dependencies, correcting the font import, and then upgrading to the latest stable version of Next.js, the application now builds successfully, is up-to-date, and all interactive elements are fully functional. The project is now on a stable foundation, ready for further development.

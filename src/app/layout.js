@@ -1,18 +1,7 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import "./globals.css";
-import { ThemeProvider } from "@/sections/ThemeProvider";
-import { RouterProvider } from "@/sections/Router";
-import ClientLayout from "./ClientLayout"; // <-- new client wrapper
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import ClientLayout from "./ClientLayout.jsx";
 
 export const metadata = {
   title: "ShareAPlate",
@@ -26,13 +15,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
-        <ThemeProvider>
-          <RouterProvider>
-            <ClientLayout>{children}</ClientLayout>
-          </RouterProvider>
-        </ThemeProvider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
