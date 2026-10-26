@@ -112,7 +112,7 @@ export function SignupPage() {
               <div className="space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
+                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200 cursor-pointer"
                   onClick={() => handleSocialSignup('Google')}
                   disabled={isLoading || isSocialLoading === 'Google'}
                 >
@@ -121,7 +121,7 @@ export function SignupPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
+                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200 cursor-pointer"
                   onClick={() => handleSocialSignup('Apple')}
                    disabled={isLoading || isSocialLoading === 'Apple'}
                 >
@@ -268,11 +268,11 @@ export function SignupPage() {
                     />
                     <Label htmlFor="agreeToTerms" className="text-sm leading-5">
                       I agree to the{' '}
-                      <Button variant="link" className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4">
+                      <Button variant="link" className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4 cursor-pointer">
                         Terms of Service
                       </Button>
                       and{' '}
-                      <Button variant="link" className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4">
+                      <Button variant="link" className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4 cursor-pointer">
                         Privacy Policy
                       </Button>
                     </Label>
@@ -295,7 +295,7 @@ export function SignupPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Creating Account...' : 'Create Your Account'}
@@ -306,7 +306,7 @@ export function SignupPage() {
                 Already have an account?{' '}
                 <Button
                   variant="link"
-                  className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4"
+                  className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4 cursor-pointer"
                   onClick={() => router.push('/login')}
                 >
                   Sign in here

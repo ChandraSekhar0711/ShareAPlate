@@ -81,6 +81,11 @@ export function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
+  // Hide nav items on login or register pages
+  if (pathname === '/login' || pathname === '/register') {
+    return null;
+  }
+
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'Donate', href: '/donate' },

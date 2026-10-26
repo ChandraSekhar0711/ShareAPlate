@@ -10,12 +10,19 @@ import { ImageWithFallback } from '@/assets/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth, googleProvider, appleProvider } from '../../lib/firebase';
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
+} from "firebase/auth";
 import Cookies from 'js-cookie';
 
 export function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -23,6 +30,25 @@ export function LoginPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSocialLoading, setIsSocialLoading] = useState(null);
+
+  const getFriendlyErrorMessage = (errorCode) => {
+    switch (errorCode) {
+      case 'auth/invalid-credential':
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'Invalid email or password. Please try again.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'auth/too-many-requests':
+        return 'Too many failed login attempts. Please try again later.';
+      case 'auth/popup-closed-by-user':
+        return 'Sign-in window was closed before completing.';
+      default:
+        return 'An unexpected error occurred. Please try again.';
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -34,12 +60,21 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
+      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceType);
+
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const token = await userCredential.user.getIdToken();
-      Cookies.set('firebase-auth-token', token, { expires: 7 }); // Set cookie for 7 days
-      router.push('/profile'); // Redirect to profile page on successful login
+
+      if (rememberMe) {
+        Cookies.set('firebase-auth-token', token, { expires: 7 });
+      } else {
+        Cookies.set('firebase-auth-token', token);
+      }
+
+      router.push('/profile');
     } catch (error) {
-      setError(error.message);
+      setError(getFriendlyErrorMessage(error.code));
     } finally {
       setIsLoading(false);
     }
@@ -56,16 +91,26 @@ export function LoginPage() {
         } else if (provider === 'Apple') {
             authProvider = appleProvider;
         } else {
-            console.log(`Social login with ${provider} is not implemented yet.`);
+            setError(`${provider} sign-in is not supported yet.`);
             setIsSocialLoading(null);
             return;
         }
+
+        const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+        await setPersistence(auth, persistenceType);
+
         const userCredential = await signInWithPopup(auth, authProvider);
         const token = await userCredential.user.getIdToken();
-        Cookies.set('firebase-auth-token', token, { expires: 7 });
+
+        if (rememberMe) {
+          Cookies.set('firebase-auth-token', token, { expires: 7 });
+        } else {
+          Cookies.set('firebase-auth-token', token);
+        }
+
         router.push('/profile');
     } catch (error) {
-        setError(error.message);
+        setError(getFriendlyErrorMessage(error.code));
     } finally {
         setIsSocialLoading(null);
     }
@@ -115,7 +160,7 @@ export function LoginPage() {
               <div className="space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
+                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200 cursor-pointer"
                   onClick={() => handleSocialLogin('Google')}
                   disabled={isLoading || isSocialLoading === 'Google'}
                 >
@@ -124,7 +169,7 @@ export function LoginPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200"
+                  className="w-full bg-card/50 border-border hover:bg-muted/50 text-card-foreground border-2 hover:border-primary/20 transition-all duration-200 cursor-pointer"
                   onClick={() => handleSocialLogin('Apple')}
                   disabled={isLoading || isSocialLoading === 'Apple'}
                 >
@@ -189,12 +234,19 @@ export function LoginPage() {
 
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" className="rounded border-border" disabled={isLoading} />
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded border-border"
+                      disabled={isLoading}
+                    />
                     <span className="text-muted-foreground">Remember me</span>
                   </label>
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4"
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4 cursor-pointer"
                     onClick={() => router.push('/forgotPassword')}
                   >
                     Forgot password?
@@ -204,7 +256,7 @@ export function LoginPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Signing In...' : 'Sign In to ShareAPlate'}
@@ -215,7 +267,7 @@ export function LoginPage() {
                 Don't have an account?{' '}
                 <Button
                   variant="link"
-                  className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4"
+                  className="p-0 h-auto text-primary hover:text-primary/80 underline-offset-4 cursor-pointer"
                   onClick={() => router.push('/register')}
                 >
                   Join our community
